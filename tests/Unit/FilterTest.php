@@ -13,8 +13,8 @@ it('should filter collection', function () {
     $filter->addFilterable(
         Select::make('Role', 'role')
             ->allowMultipleSelections()
-            ->addOption(new Option('admin', 'Admin'))
-            ->addOption(new Option('editor', 'Editor'))
+            ->option(new Option('admin', 'Admin'))
+            ->option(new Option('editor', 'Editor'))
     );
 
     // Create source to be filtered on

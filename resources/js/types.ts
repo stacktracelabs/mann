@@ -5,19 +5,34 @@ export type FSetValue = (value: any) => void
 export interface ISelectOption {
   id: string
   title: string
+  extra: Record<string, any>
 }
 
 export interface ISelectFilterable {
   id: string
   title: string
   component: 'select'
-  options: Array<ISelectOption>
-  emptyTitle: string
   emptyValue: any
+  queryParameter: string
+  options: Array<ISelectOption>
+  emptyOptionTitle: string
   multiple: boolean
 }
 
-export type IFilterable = ISelectFilterable
+export interface IRangeFilterable {
+  id: string
+  title: string
+  component: 'range'
+  emptyValue: any
+  queryParameter: string
+  min: number
+  max: number
+  step: number
+  minAttribute: string
+  maxAttribute: string
+}
+
+export type IFilterable = ISelectFilterable | IRangeFilterable
 
 export interface IFilterableDef<T = any> {
   filterable: IFilterable

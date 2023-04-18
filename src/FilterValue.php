@@ -7,7 +7,9 @@ use Illuminate\Support\Arr;
 
 class FilterValue
 {
-    protected array $value = [];
+    public function __construct(
+        protected array $value = []
+    ) { }
 
     public function set(string $filterableId, mixed $value): static
     {
@@ -16,9 +18,9 @@ class FilterValue
         return $this;
     }
 
-    public function getForFilterable(string $filterableId): mixed
+    public function forFilterable(string $filterableId, $default = null): mixed
     {
-        return Arr::get($this->value, $filterableId);
+        return Arr::get($this->value, $filterableId, $default);
     }
 
     public static function fromRequest(Request $request, array $keys = []): static
@@ -28,12 +30,6 @@ class FilterValue
 
     public static function fromArray(array $value): static
     {
-        $filterValue = new FilterValue();
-
-        foreach ($value as $key => $filterVal) {
-            $filterValue->set($key, $filterVal);
-        }
-
-        return $filterValue;
+        return new static($value);
     }
 }

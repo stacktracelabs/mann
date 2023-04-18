@@ -11,53 +11,55 @@ class Filterable implements Arrayable
 {
     /**
      * Unique identifier of the filterable.
-     *
-     * @var string|null
      */
     protected ?string $id = null;
 
     /**
      * The title of the filterable.
-     *
-     * @var string|null
      */
     protected ?string $title = null;
 
     /**
      * The attribute to be filtered on.
-     *
-     * @var string|null
      */
     protected ?string $attribute = null;
 
     /**
      * The component of the filterable.
-     *
-     * @var string|null
      */
     protected ?string $component = null;
 
     /**
-     * Retrive unique identifier of the filterable.
-     *
-     * @return string
+     * The name of the query paramter.
      */
-    public function id(): string
+    protected ?string $queryParameter = null;
+
+    /**
+     * Set the query parameter name for the filterable value.
+     */
+    public function queryParameter(?string $name): static
     {
-        if (is_string($this->id)) {
-            return $this->id;
+        $this->queryParameter = $name;
+
+        return $this;
+    }
+
+    /**
+     * Retrieve the query parameter name for the filterable value.
+     */
+    public function getQueryParameter(): string
+    {
+        if (is_null($this->queryParameter)) {
+            return $this->getId();
         }
 
-        return $this->attribute();
+        return $this->queryParameter;
     }
 
     /**
      * Set the identifier of the filterable.
-     *
-     * @param string|null $id
-     * @return $this
      */
-    public function withId(?string $id): static
+    public function id(?string $id): static
     {
         $this->id = $id;
 
@@ -65,11 +67,31 @@ class Filterable implements Arrayable
     }
 
     /**
-     * Retrieve the title of the filterable.
-     *
-     * @return string
+     * Retrive unique identifier of the filterable.
      */
-    public function title(): string
+    public function getId(): string
+    {
+        if (is_string($this->id)) {
+            return $this->id;
+        }
+
+        return $this->getAttribute();
+    }
+
+    /**
+     * Set the title of the filterable.
+     */
+    public function title(?string $title): static
+    {
+        $this->title = $title;
+
+        return $this;
+    }
+
+    /**
+     * Retrieve the title of the filterable.
+     */
+    public function getTitle(): string
     {
         if (is_null($this->title)) {
             throw new \RuntimeException("The title of the filterable [".get_class($this)."] is not set.");
@@ -79,24 +101,19 @@ class Filterable implements Arrayable
     }
 
     /**
-     * Set the title of the filterable.
-     *
-     * @param string|null $title
-     * @return $this
+     * Set the attribute to be filtered on.
      */
-    public function withTitle(?string $title): static
+    public function attribute(?string $attribute): static
     {
-        $this->title = $title;
+        $this->attribute = $attribute;
 
         return $this;
     }
 
     /**
      * Retrieve the attribute to be filtered on.
-     *
-     * @return string
      */
-    public function attribute(): string
+    public function getAttribute(): string
     {
         if (is_string($this->attribute)) {
             return $this->attribute;
@@ -106,26 +123,19 @@ class Filterable implements Arrayable
     }
 
     /**
-     * Set the attribute to be filtered on.
-     *
-     * @param string|null $attribute
-     * @return $this
+     * Set the component used to render the filterable.
      */
-    public function withAttribute(?string $attribute): static
-    {
-        $this->attribute = $attribute;
-
-        return $this;
-    }
-
-    public function withComponent(?string $component): static
+    public function component(?string $component): static
     {
         $this->component = $component;
 
         return $this;
     }
 
-    protected function component(): string
+    /**
+     * Retrieve component used to render the filterable.
+     */
+    protected function getComponent(): string
     {
         if ($this->component != null) {
             return $this->component;
@@ -134,12 +144,30 @@ class Filterable implements Arrayable
         throw new \RuntimeException("The component is not set on [".get_class($this)."]");
     }
 
+    /**
+     * Retrieve value of the empty filterable.
+     */
+    public function getEmptyValue(): mixed
+    {
+        return null;
+    }
+
+    /**
+     * Sanitize given filter value.
+     */
+    public function sanitizeValue(mixed $value): mixed
+    {
+        return $value;
+    }
+
     public function toArray()
     {
         return [
-            'id' => $this->id(),
-            'title' => $this->title(),
-            'component' => $this->component(),
+            'id' => $this->getId(),
+            'title' => $this->getTitle(),
+            'component' => $this->getComponent(),
+            'emptyValue' => $this->getEmptyValue(),
+            'queryParameter' => $this->getQueryParameter(),
         ];
     }
 
@@ -152,6 +180,6 @@ class Filterable implements Arrayable
      */
     public static function make(string $title, string $attribute): static
     {
-        return (new static)->withTitle($title)->withAttribute($attribute);
+        return (new static)->title($title)->attribute($attribute);
     }
 }

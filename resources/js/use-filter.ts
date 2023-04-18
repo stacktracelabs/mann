@@ -2,25 +2,40 @@ import {markRaw, ref, watchEffect} from "vue";
 import type {ComputedRef, Ref} from "vue";
 import type {IFilter, IFilterableComponent, IFilterableDef} from "./types";
 import {router, usePage} from "@inertiajs/vue3";
+import type {VisitOptions} from "@inertiajs/core";
 import qs from "qs";
 import {resolveFilterComponent} from "./main";
 
-export function useFilter(filter: ComputedRef<IFilter> | Ref<IFilter>) {
+function valuesMatches(a: any, b: any): boolean {
+  if (a === b) {
+    return true
+  }
+
+  if (a === null && b === null) {
+    return true
+  }
+
+  if (Array.isArray(a) && Array.isArray(b) && a.length === 0 && b.length === 0) {
+    return true
+  }
+
+  return JSON.stringify(a).split('').sort().join('') === JSON.stringify(b).split('').sort().join('')
+}
+
+export function useFilter(
+  filter: ComputedRef<IFilter> | Ref<IFilter>,
+  options: VisitOptions = {}
+) {
   const components = ref<Array<IFilterableComponent>>([])
 
-  const setValue = (filterable: IFilterableDef, value: any) => {
+  const setValue = (filterableDef: IFilterableDef, value: any) => {
     const query = getQueryParams()
 
-    // TODO: Add support query param name
-    const queryParamName = filterable.filterable.id
+    const filterable = filterableDef.filterable
 
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        delete query[queryParamName]
-      } else {
-        query[queryParamName] = value
-      }
-    } else if (value) {
+    const queryParamName = filterable.queryParameter
+
+    if (! valuesMatches(value, filterable.emptyValue)) {
       query[queryParamName] = value
     } else {
       delete query[queryParamName]
@@ -38,17 +53,10 @@ export function useFilter(filter: ComputedRef<IFilter> | Ref<IFilter>) {
       url += `?${qs.stringify(query)}`
     }
 
-    router.visit(url, {
-      preserveState: true
-    })
+    router.visit(url, options)
   }
 
-  const shouldUpdateQuery = (newQuery: any) => {
-    const currentQuery = JSON.stringify(getQueryParams()).split('').sort().join('')
-    const updatedQuery = JSON.stringify(newQuery).split('').sort().join('')
-
-    return currentQuery !== updatedQuery
-  }
+  const shouldUpdateQuery = (newQuery: any) => ! valuesMatches(getQueryParams(), newQuery)
 
   const getQueryParams = () => {
     return qs.parse(window.location.search.replace('?', ''))

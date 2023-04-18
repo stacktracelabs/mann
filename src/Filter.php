@@ -15,23 +15,16 @@ class Filter implements Arrayable
 {
     /**
      * List of filterables within the filter.
-     *
-     * @var array
      */
     protected array $filterables = [];
 
     /**
      * The value of the filter.
-     *
-     * @var \StackTrace\Mann\FilterValue|null
      */
     protected ?FilterValue $value = null;
 
     /**
      * Add filterable to the filter.
-     *
-     * @param \StackTrace\Mann\Filterable $filterable
-     * @return $this
      */
     public function addFilterable(Filterable $filterable): static
     {
@@ -42,8 +35,6 @@ class Filter implements Arrayable
 
     /**
      * Retrieve filterables of the filter.
-     *
-     * @return \Illuminate\Support\Collection
      */
     public function getFilterables(): Collection
     {
@@ -52,9 +43,6 @@ class Filter implements Arrayable
 
     /**
      * Set the value of the filter.
-     *
-     * @param \StackTrace\Mann\FilterValue $value
-     * @return $this
      */
     public function setValue(FilterValue $value): static
     {
@@ -65,26 +53,34 @@ class Filter implements Arrayable
 
     /**
      * Set the value of the filter from request.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return $this
      */
     public function setValueFromRequest(Request $request): static
     {
-        $keys = collect($this->filterables)->map(fn (Filterable $filterable) => $filterable->id())->all();
+        $keys = $this->getFilterables()->map(fn (Filterable $filterable) => $filterable->getId())->all();
 
         return $this->setValue(FilterValue::fromRequest($request, $keys));
     }
 
     /**
+     * When define method exists on the filter, we'll call
+     * this method to define filterables on the filter.
+     */
+    protected function ensureFilterDefined(): void
+    {
+        if (method_exists($this, 'define')) {
+            collect($this->define())->map(function (Filterable $filterable) {
+                $this->addFilterable($filterable);
+            });
+        }
+    }
+
+    /**
      * Applies filter on the source.
-     *
-     * @param mixed $source
-     * @param \StackTrace\Mann\FilterValue|null $value
-     * @return mixed
      */
     public function apply(mixed $source, ?FilterValue $value = null): mixed
     {
+        $this->ensureFilterDefined();
+
         if ($value instanceof FilterValue) {
             $this->setValue($value);
         }
@@ -106,14 +102,10 @@ class Filter implements Arrayable
 
     /**
      * Applies filter on eloquent builder.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @return \Illuminate\Database\Eloquent\Builder
      */
     protected function filterEloquentBuilder(EloquentBuilder $builder): EloquentBuilder
     {
-        /** @var \StackTrace\Mann\Filterable $filterable */
-        foreach ($this->filterables as $filterable) {
+        $this->getFilterables()->each(function (Filterable $filterable) use ($builder) {
             if (! method_exists($filterable, 'applyOnEloquentBuilder')) {
                 throw new \RuntimeException("Filterable [".get_class($filterable)."] does not support filtering on eloquent builder.");
             }
@@ -121,44 +113,41 @@ class Filter implements Arrayable
             $value = $this->getValueForFilterable($filterable);
 
             $filterable->applyOnEloquentBuilder($builder, $value);
-        }
+        });
 
         return $builder;
     }
 
     /**
      * Applies filter on collection.
-     *
-     * @param \Illuminate\Support\Collection $collection
-     * @return \Illuminate\Support\Collection
      */
     protected function filterCollection(Collection $collection): Collection
     {
-        $result = $collection;
-
-        /** @var \StackTrace\Mann\Filterable $filterable */
-        foreach ($this->filterables as $filterable) {
+        return $this->getFilterables()->reduce(function (Collection $collection, Filterable $filterable) {
             if (! method_exists($filterable, 'applyOnCollection')) {
                 throw new \RuntimeException("Filterable [".get_class($filterable)."] does not support filtering collections.");
             }
 
             $value = $this->getValueForFilterable($filterable);
 
-            $result = $filterable->applyOnCollection($result, $value);
-        }
-
-        return $result;
+            return $filterable->applyOnCollection($collection, $value);
+        }, $collection);
     }
 
+    /**
+     * Retrieve current value for given filterable.
+     */
     protected function getValueForFilterable(Filterable $filterable): mixed
     {
-        return $this->value?->getForFilterable($filterable->id());
+        return $filterable->sanitizeValue(
+            $this->value?->forFilterable($filterable->getId(), fn () => $filterable->getEmptyValue())
+        );
     }
 
     public function toArray()
     {
         return [
-            'filterables' => collect($this->filterables)->map(function (Filterable $filterable) {
+            'filterables' => $this->getFilterables()->map(function (Filterable $filterable) {
                 return [
                     'filterable' => $filterable,
                     'value' => $this->getValueForFilterable($filterable),
@@ -166,5 +155,4 @@ class Filter implements Arrayable
             })->all(),
         ];
     }
-
 }
