@@ -30,7 +30,7 @@ export interface IFilter {
 
 export interface IFilterableComponent {
   filterable: IFilterable
-  component: Component
+  component: Component | any
   value: any
   setValue: FSetValue
 }
