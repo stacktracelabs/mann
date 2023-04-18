@@ -7,6 +7,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use StackTrace\Mann\Filterable;
 use StackTrace\Mann\Option;
+use function array_merge;
 use function collect;
 use function count;
 use function is_array;
@@ -14,6 +15,13 @@ use function is_string;
 
 class Select extends Filterable
 {
+    /**
+     * Default select component.
+     *
+     * @var string|null
+     */
+    protected ?string $component = 'select';
+
     /**
      * List of filter options.
      *
@@ -27,6 +35,13 @@ class Select extends Filterable
      * @var bool
      */
     protected bool $multiple = false;
+
+    /**
+     * The title of option when nothing is selected.
+     *
+     * @var string|null
+     */
+    protected ?string $emptyTitle = 'Please choose a value';
 
     /**
      * Add option to the select.
@@ -124,5 +139,27 @@ class Select extends Filterable
         }
 
         return is_string($value) ? $this->getOptionById($value) : null;
+    }
+
+    public function withEmptyTitle(?string $title): static
+    {
+        $this->emptyTitle = $title;
+
+        return $this;
+    }
+
+    public function emptyTitle(): string
+    {
+        return $this->emptyTitle ?: throw new \RuntimeException("The empty title is not set.");
+    }
+
+    public function toArray()
+    {
+        return array_merge(parent::toArray(), [
+            'options' => $this->options,
+            'multiple' => $this->multiple,
+            'emptyTitle' => $this->emptyTitle(),
+            'emptyValue' => null, // TODO: Make configurable
+        ]);
     }
 }

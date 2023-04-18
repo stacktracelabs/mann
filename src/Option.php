@@ -2,7 +2,9 @@
 
 namespace StackTrace\Mann;
 
-class Option
+use Illuminate\Contracts\Support\Arrayable;
+
+class Option implements Arrayable
 {
     public function __construct(
         protected string $id,
@@ -27,5 +29,13 @@ class Option
     public function value(): mixed
     {
         return $this->getId();
+    }
+
+    public function toArray()
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+        ];
     }
 }

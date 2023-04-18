@@ -2,14 +2,16 @@
 
 namespace StackTrace\Mann;
 
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use function collect;
 use function get_class;
 use function is_array;
 use function method_exists;
 
-class Filter
+class Filter implements Arrayable
 {
     /**
      * List of filterables within the filter.
@@ -62,6 +64,19 @@ class Filter
     }
 
     /**
+     * Set the value of the filter from request.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return $this
+     */
+    public function setValueFromRequest(Request $request): static
+    {
+        $keys = collect($this->filterables)->map(fn (Filterable $filterable) => $filterable->id())->all();
+
+        return $this->setValue(FilterValue::fromRequest($request, $keys));
+    }
+
+    /**
      * Applies filter on the source.
      *
      * @param mixed $source
@@ -103,7 +118,7 @@ class Filter
                 throw new \RuntimeException("Filterable [".get_class($filterable)."] does not support filtering on eloquent builder.");
             }
 
-            $value = $this->value->getForFilterable($filterable->id());
+            $value = $this->getValueForFilterable($filterable);
 
             $filterable->applyOnEloquentBuilder($builder, $value);
         }
@@ -127,11 +142,29 @@ class Filter
                 throw new \RuntimeException("Filterable [".get_class($filterable)."] does not support filtering collections.");
             }
 
-            $value = $this->value->getForFilterable($filterable->id());
+            $value = $this->getValueForFilterable($filterable);
 
             $result = $filterable->applyOnCollection($result, $value);
         }
 
         return $result;
     }
+
+    protected function getValueForFilterable(Filterable $filterable): mixed
+    {
+        return $this->value?->getForFilterable($filterable->id());
+    }
+
+    public function toArray()
+    {
+        return [
+            'filterables' => collect($this->filterables)->map(function (Filterable $filterable) {
+                return [
+                    'filterable' => $filterable,
+                    'value' => $this->getValueForFilterable($filterable),
+                ];
+            })->all(),
+        ];
+    }
+
 }

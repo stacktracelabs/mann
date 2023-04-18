@@ -2,11 +2,12 @@
 
 namespace StackTrace\Mann;
 
+use Illuminate\Contracts\Support\Arrayable;
 use function get_class;
 use function is_null;
 use function is_string;
 
-class Filterable
+class Filterable implements Arrayable
 {
     /**
      * Unique identifier of the filterable.
@@ -28,6 +29,13 @@ class Filterable
      * @var string|null
      */
     protected ?string $attribute = null;
+
+    /**
+     * The component of the filterable.
+     *
+     * @var string|null
+     */
+    protected ?string $component = null;
 
     /**
      * Retrive unique identifier of the filterable.
@@ -108,6 +116,31 @@ class Filterable
         $this->attribute = $attribute;
 
         return $this;
+    }
+
+    public function withComponent(?string $component): static
+    {
+        $this->component = $component;
+
+        return $this;
+    }
+
+    protected function component(): string
+    {
+        if ($this->component != null) {
+            return $this->component;
+        }
+
+        throw new \RuntimeException("The component is not set on [".get_class($this)."]");
+    }
+
+    public function toArray()
+    {
+        return [
+            'id' => $this->id(),
+            'title' => $this->title(),
+            'component' => $this->component(),
+        ];
     }
 
     /**

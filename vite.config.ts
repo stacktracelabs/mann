@@ -1,5 +1,3 @@
-import {fileURLToPath, URL} from 'node:url'
-
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue'
 import * as path from "path";
@@ -16,10 +14,12 @@ export default defineConfig({
     rollupOptions: {
       external: [
         'vue',
+        '@inertiajs/vue3',
       ],
       output: {
         globals: {
           vue: 'Vue',
+          '@inertiajs/vue3': 'Inertia',
         }
       }
     }
